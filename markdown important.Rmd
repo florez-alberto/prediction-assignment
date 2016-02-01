@@ -1,0 +1,131 @@
+---
+title: "Prediction Assingment"
+author: "Alberto Florez"
+date: "Sunday, January 31, 2016"
+output: html_document
+---
+
+**PREDICTION ASSIGNMENT**
+*BY ALBERTO FLOREZ*
+
+
+One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants.
+  
+    
+I will first load several  libraries and then read the data (from my computer)
+  
+  
+  
+```{r, collapse=TRUE}
+
+library(caret)
+library(randomForest)
+library(e1071)
+library(tree)
+library(rattle)
+library(rpart)
+
+
+#read the text
+
+
+training3 = read.csv("C:/Users/Alberto2/Documents/pml/pml-training.csv", na.strings=c("", "NA", "NULL"))
+training4 <- training3
+final.test <- read.csv("C:/Users/Alberto2/Documents/pml/pml-testing.csv", na.strings=c("", "NA", "NULL"))
+  
+
+
+```
+  
+  
+Now I'll select the most suitable variables (clean the data set): remove all NAs. Then create a new train set with classe variable in the first column
+  
+  
+  
+```{r}
+#remove all variables that have missing values (NA)
+isAnyMissing <- sapply(training4, function (x) any(is.na(x) | x == ""))
+isPredictor <- !isAnyMissing & grepl("belt|[^(fore)]arm|dumbbell|forearm", names(isAnyMissing))
+predCandidates <- names(isAnyMissing)[isPredictor]
+
+#add classe 
+complete.vars <- c("classe", predCandidates)
+train1 <-  training4[, complete.vars]
+
+```
+  
+   
+Now, I will create the two sets, splitting them by 70%.
+  
+  
+  
+```{r}
+
+#create sets
+
+inTrain <- createDataPartition(y = train1$classe, list = FALSE, p=0.7)
+trainData <- train1[inTrain,]
+testData <- train1[-inTrain,]
+
+```
+   
+   
+   
+Finally, I know that trees are the best solution to this assignment, because of the characteristics of the data and because we have been taught that it performs well ins most of the cases.  
+Thus, im doing a tree model but using RPART library because rpart method from caret takes too long.  
+Then, ill make a random forests model.  
+Finally Ill compare both error rates.
+
+
+  
+  
+
+```{r}
+
+
+
+
+modFitA1 <- rpart(classe ~ ., data=trainData, method="class")
+predictionsA1 <- predict(modFitA1, testData, type = "class")
+m1 <- confusionMatrix(predictionsA1, testData$classe)
+m1 #print confusion matrix
+predMatrix <- table(predictionsA1 ,testData$classe)
+sum(diag(predMatrix))/sum(as.vector(predMatrix)) # error rate
+
+modFitB1 <- randomForest(classe ~. , data=trainData)
+predictionsB1 <- predict(modFitB1, testData, type = "class")
+m2 <- confusionMatrix(predictionsB1, testData$classe)
+m2 #print confusion matrix
+predMatrix2 <- table(predictionsB1 ,testData$classe)
+sum(diag(predMatrix2))/sum(as.vector(predMatrix2)) # error rate
+
+
+
+
+```
+  
+  
+As its been shown, random forests model (Model B1) has the best error rate and so ill use it as a model to predict the test set.
+
+
+
+
+
+```{r}
+
+
+answers <- predict(modFitB1, final.test)
+answers
+
+```
+  
+  
+20/20
+  
+  
+  .
+
+
+
+
+
